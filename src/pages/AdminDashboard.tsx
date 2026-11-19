@@ -184,9 +184,9 @@ export const AdminDashboard: React.FC = () => {
         />
       </dl>
 
-      <section className="mt-10 rounded-[28px] bg-white px-10 py-9 shadow-[0_2px_8px_rgba(15,23,42,0.08)]">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display flex items-center gap-3 text-[26px] font-semibold tracking-[-0.5px] text-[#1b3428]">
+      <section className="mt-10 rounded-[28px] bg-white px-5 py-6 shadow-[0_2px_8px_rgba(15,23,42,0.08)] sm:px-10 sm:py-9">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="font-display flex items-center gap-3 text-xl font-semibold tracking-[-0.5px] text-[#1b3428] sm:text-[26px]">
             <Activity className="h-6 w-6 text-[#119b48]" aria-hidden="true" />
             Recent Job Posts
           </h2>
@@ -214,13 +214,13 @@ export const AdminDashboard: React.FC = () => {
                       {job.companyName} · {job.location} · {job.jobCode}
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-8">
+                  <div className="flex shrink-0 items-center gap-3 sm:gap-8">
                     <span
                       className={`rounded-full px-3 py-1 text-[14px] font-medium ${badgeClass[jobState]}`}
                     >
                       {jobState}
                     </span>
-                    <span className="w-[120px] text-right text-[15px] text-[#5d7266]">
+                    <span className="w-[92px] text-right text-[14px] text-[#5d7266] sm:w-[120px] sm:text-[15px]">
                       {count} {count === 1 ? 'application' : 'applications'}
                     </span>
                   </div>

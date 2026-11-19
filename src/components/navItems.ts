@@ -1,18 +1,9 @@
 import {
   Award,
   BookOpen,
-  CalendarDays,
-  ClipboardCheck,
   ClipboardList,
-  FileSearch,
   FileText,
-  FlaskConical,
   LayoutDashboard,
-  Layers,
-  Library,
-  MessageSquare,
-  UserCheck,
-  Users,
   Video,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -36,15 +27,5 @@ export const candidateNavItems: NavItem[] = [
 export const adminNavItems: NavItem[] = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/admin/job-events', label: 'Job Events', icon: BookOpen },
-  { to: '/admin/candidates', label: 'Candidates', icon: UserCheck },
-  { to: '/admin/ats-screening', label: 'Screen with ATS', icon: FileSearch },
-  { to: '/admin/ai-prompts', label: 'Manage AI Prompts', icon: MessageSquare },
-  { to: '/admin/assign-assessment', label: 'Assign Assessment', icon: ClipboardList },
-  { to: '/admin/assessment-results', label: 'Assessment Results', icon: ClipboardCheck },
-  { to: '/admin/question-bank', label: 'Question Bank', icon: Library },
-  { to: '/admin/schedule-interview', label: 'Schedule Interview', icon: CalendarDays },
-  { to: '/admin/interview-results', label: 'Interview Results', icon: Video },
-  { to: '/admin/bulk-ats', label: 'Bulk ATS Check', icon: Layers },
-  { to: '/admin/test-mode', label: 'Test Mode', icon: FlaskConical },
-  { to: '/admin/users', label: 'User Management', icon: Users },
+  { to: '/admin/applications', label: 'Applications', icon: ClipboardList },
 ];

@@ -29,7 +29,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         </li>
       </ol>
     </nav>
-    <h1 className="font-display mt-8 text-[40px] font-bold leading-tight tracking-[-1px] text-[#1b3428]">
+    <h1 className="font-display mt-8 text-3xl font-bold leading-tight tracking-[-1px] text-[#1b3428] sm:text-[40px]">
       {heading ?? title}
     </h1>
     {subtitle && <p className="mt-2 text-[17px] text-[#53665b]">{subtitle}</p>}

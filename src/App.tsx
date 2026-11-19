@@ -4,6 +4,7 @@ import { adminNavItems, candidateNavItems } from './components/navItems'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { ComingSoon } from './pages/ComingSoon'
 import { AdminDashboard } from './pages/AdminDashboard'
+import { AdminApplications } from './pages/AdminApplications'
 import { AdminJobEvents } from './pages/AdminJobEvents'
 import { AppliedJobs } from './pages/AppliedJobs'
 import { Dashboard } from './pages/Dashboard'
@@ -11,6 +12,7 @@ import { ForgotPassword } from './pages/ForgotPassword'
 import { Login } from './pages/Login'
 import { Register } from './pages/Register'
 import { JobListings } from './pages/JobListings'
+import { NotFound } from './pages/NotFound'
 
 function App() {
   return (
@@ -45,8 +47,14 @@ function App() {
         <Route element={<DashboardLayout navItems={adminNavItems} />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/job-events" element={<AdminJobEvents />} />
+          <Route path="/admin/applications" element={<AdminApplications />} />
           {adminNavItems
-            .filter((item) => item.to !== '/admin/dashboard' && item.to !== '/admin/job-events')
+            .filter(
+              (item) =>
+                item.to !== '/admin/dashboard' &&
+                item.to !== '/admin/job-events' &&
+                item.to !== '/admin/applications',
+            )
             .map((item) => (
               <Route
                 key={item.to}
@@ -56,6 +64,8 @@ function App() {
             ))}
         </Route>
       </Route>
+
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }

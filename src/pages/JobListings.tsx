@@ -22,7 +22,7 @@ import { useDocumentTitle } from '../utils/useDocumentTitle';
 type EmploymentType = 'FULL_TIME' | 'PART_TIME' | 'INTERNSHIP';
 type EmploymentFilter = 'ALL' | EmploymentType;
 type AvailabilityFilter = 'ACTIVE' | 'CLOSING_SOON' | 'EXPIRED' | 'ALL';
-type JobStatus = Exclude<AvailabilityFilter, 'ALL'>;
+type JobStatus = 'ACTIVE' | 'EXPIRED' | 'INACTIVE';
 
 interface Job {
   id: number;
@@ -34,6 +34,7 @@ interface Job {
   employmentType: EmploymentType;
   requiredSkills: string;
   deadline: string;
+  status: string;
   archived: boolean;
 }
 
@@ -61,11 +62,13 @@ const availabilityLabels: Record<AvailabilityFilter, string> = {
   ALL: 'all',
 };
 
-const getJobListings = () =>
-  Promise.all([
+const getJobListings = async () => {
+  const [jobs, applications] = await Promise.allSettled([
     api.get<Job[]>('/jobs'),
     api.get<Application[]>('/jobs/me/applications'),
   ]);
+  return { jobs, applications };
+};
 
 const getRequestError = (err: unknown, fallback: string) => {
   const message = axios.isAxiosError<{ message?: string }>(err)
@@ -92,13 +95,21 @@ const getSkills = (skills: string) =>
     .filter(Boolean);
 
 const getJobStatus = (job: Job, referenceTime: number): JobStatus | null => {
-  if (job.archived) return null;
+  if (job.archived) return 'INACTIVE';
+  if (job.status.toUpperCase() !== 'OPEN') return 'INACTIVE';
 
   const deadline = new Date(job.deadline).getTime();
   if (Number.isNaN(deadline)) return null;
-  if (deadline < referenceTime) return 'EXPIRED';
-  if (deadline <= referenceTime + CLOSING_SOON_WINDOW_MS) return 'CLOSING_SOON';
+  if (deadline <= referenceTime) return 'EXPIRED';
   return 'ACTIVE';
+};
+
+const isClosingSoon = (job: Job, referenceTime: number) => {
+  const deadline = new Date(job.deadline).getTime();
+  return (
+    getJobStatus(job, referenceTime) === 'ACTIVE' &&
+    deadline <= referenceTime + CLOSING_SOON_WINDOW_MS
+  );
 };
 
 export const JobListings: FC = () => {
@@ -112,18 +123,35 @@ export const JobListings: FC = () => {
   const [availabilityFilter, setAvailabilityFilter] = useState<AvailabilityFilter>('ACTIVE');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [applicationLoadError, setApplicationLoadError] = useState('');
   const [applyingJobId, setApplyingJobId] = useState<number | null>(null);
   const [actionMessage, setActionMessage] = useState<ListingActionMessage | null>(null);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
   const loadListings = useCallback(async () => {
+    setError('');
+    setApplicationLoadError('');
     try {
-      const [jobResponse, applicationResponse] = await getJobListings();
-      setJobs(jobResponse.data);
-      setAppliedJobIds(new Set(applicationResponse.data.map((application) => application.jobId)));
-      setReferenceTime(Date.now());
-    } catch (err: unknown) {
-      setError(getRequestError(err, 'Unable to load jobs. Please try again.'));
+      const { jobs: jobResult, applications: applicationResult } = await getJobListings();
+      if (jobResult.status === 'fulfilled') {
+        setJobs(jobResult.value.data);
+        setReferenceTime(Date.now());
+      } else {
+        setError(getRequestError(jobResult.reason, 'Unable to load jobs. Please try again.'));
+      }
+
+      if (applicationResult.status === 'fulfilled') {
+        setAppliedJobIds(
+          new Set(applicationResult.value.data.map((application) => application.jobId)),
+        );
+      } else {
+        setApplicationLoadError(
+          getRequestError(
+            applicationResult.reason,
+            'Could not load your application statuses. Jobs are still available.',
+          ),
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -131,20 +159,30 @@ export const JobListings: FC = () => {
 
   useEffect(() => {
     let active = true;
-    getJobListings()
-      .then(([jobResponse, applicationResponse]) => {
-        if (active) {
-          setJobs(jobResponse.data);
-          setAppliedJobIds(new Set(applicationResponse.data.map((application) => application.jobId)));
-          setReferenceTime(Date.now());
-        }
-      })
-      .catch((err: unknown) => {
-        if (active) setError(getRequestError(err, 'Unable to load jobs. Please try again.'));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+    getJobListings().then(({ jobs: jobResult, applications: applicationResult }) => {
+      if (!active) return;
+
+      if (jobResult.status === 'fulfilled') {
+        setJobs(jobResult.value.data);
+        setReferenceTime(Date.now());
+      } else {
+        setError(getRequestError(jobResult.reason, 'Unable to load jobs. Please try again.'));
+      }
+
+      if (applicationResult.status === 'fulfilled') {
+        setAppliedJobIds(
+          new Set(applicationResult.value.data.map((application) => application.jobId)),
+        );
+      } else {
+        setApplicationLoadError(
+          getRequestError(
+            applicationResult.reason,
+            'Could not load your application statuses. Jobs are still available.',
+          ),
+        );
+      }
+      setLoading(false);
+    });
 
     return () => {
       active = false;
@@ -152,10 +190,11 @@ export const JobListings: FC = () => {
   }, []);
 
   const statusCounts = useMemo(() => {
-    const counts: Record<AvailabilityFilter, number> = {
+    const counts: Record<JobStatus | 'ALL' | 'CLOSING_SOON', number> = {
       ACTIVE: 0,
       CLOSING_SOON: 0,
       EXPIRED: 0,
+      INACTIVE: 0,
       ALL: 0,
     };
 
@@ -164,6 +203,7 @@ export const JobListings: FC = () => {
       if (status) {
         counts[status] += 1;
         counts.ALL += 1;
+        if (isClosingSoon(job, referenceTime)) counts.CLOSING_SOON += 1;
       }
     }
 
@@ -174,7 +214,9 @@ export const JobListings: FC = () => {
     () =>
       jobs.filter((job) => {
         const status = getJobStatus(job, referenceTime);
-        return availabilityFilter === 'ALL' ? status !== null : status === availabilityFilter;
+        if (availabilityFilter === 'ALL') return status !== null;
+        if (availabilityFilter === 'CLOSING_SOON') return isClosingSoon(job, referenceTime);
+        return status === availabilityFilter;
       }),
     [jobs, referenceTime, availabilityFilter],
   );
@@ -300,6 +342,15 @@ export const JobListings: FC = () => {
         )}
       </div>
 
+      {applicationLoadError && !error && (
+        <p
+          role="status"
+          className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+        >
+          Jobs loaded, but your application statuses could not be checked: {applicationLoadError}
+        </p>
+      )}
+
       {loading ? (
         <div role="status" className="flex min-h-48 items-center justify-center">
           <span className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent" />
@@ -358,13 +409,17 @@ export const JobListings: FC = () => {
                       <CheckCircle2 className="h-3.5 w-3.5" />
                       Applied
                     </span>
-                  ) : jobStatus === 'CLOSING_SOON' ? (
+                  ) : jobStatus === 'ACTIVE' && isClosingSoon(job, referenceTime) ? (
                     <span className="shrink-0 rounded-full bg-amber-50 px-3 py-1 text-[13px] font-medium text-amber-700">
                       Closing soon
                     </span>
                   ) : jobStatus === 'EXPIRED' ? (
                     <span className="shrink-0 rounded-full bg-rose-50 px-3 py-1 text-[13px] font-medium text-rose-700">
                       Expired
+                    </span>
+                  ) : jobStatus === 'INACTIVE' ? (
+                    <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-[13px] font-medium text-slate-600">
+                      Inactive
                     </span>
                   ) : null}
                 </div>
@@ -423,13 +478,13 @@ export const JobListings: FC = () => {
                       <CheckCircle2 aria-hidden="true" className="h-4 w-4 shrink-0" />
                       <span className="truncate">View Application</span>
                     </Link>
-                  ) : jobStatus === 'EXPIRED' ? (
+                  ) : jobStatus !== 'ACTIVE' ? (
                     <button
                       type="button"
                       disabled
                       className="inline-flex h-[43px] min-w-0 flex-1 items-center justify-center rounded-[18px] bg-slate-100 px-3 text-[15px] font-medium text-slate-500"
                     >
-                      Expired
+                      {jobStatus === 'EXPIRED' ? 'Expired' : 'Unavailable'}
                     </button>
                   ) : (
                     <button
@@ -523,13 +578,13 @@ export const JobListings: FC = () => {
                   <CheckCircle2 className="h-4 w-4" />
                   View Application
                 </Link>
-              ) : getJobStatus(selectedJob, referenceTime) === 'EXPIRED' ? (
+              ) : getJobStatus(selectedJob, referenceTime) !== 'ACTIVE' ? (
                 <button
                   type="button"
                   disabled
                   className="inline-flex h-11 items-center gap-2 rounded-[16px] bg-slate-100 px-5 font-semibold text-slate-500"
                 >
-                  Expired
+                  {getJobStatus(selectedJob, referenceTime) === 'EXPIRED' ? 'Expired' : 'Unavailable'}
                 </button>
               ) : (
                 <button

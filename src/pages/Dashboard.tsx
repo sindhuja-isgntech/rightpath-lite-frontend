@@ -40,15 +40,15 @@ interface SectionCardProps {
 }
 
 const SectionCard: React.FC<SectionCardProps> = ({ title, icon: Icon, viewAllTo, emptyText }) => (
-  <section className="rounded-[28px] bg-white px-10 py-9 shadow-[0_2px_8px_rgba(15,23,42,0.08)]">
-    <div className="flex items-center justify-between">
-      <h2 className="font-display flex items-center gap-3 text-[28px] font-semibold tracking-[-0.5px] text-[#1b3428]">
+  <section className="rounded-[28px] bg-white px-5 py-6 shadow-[0_2px_8px_rgba(15,23,42,0.08)] sm:px-10 sm:py-9">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <h2 className="font-display flex items-center gap-3 text-xl font-semibold tracking-[-0.5px] text-[#1b3428] sm:text-[28px]">
         <Icon className="h-6 w-6 text-[#119b48]" />
         {title}
       </h2>
       <Link
         to={viewAllTo}
-        className="flex items-center gap-2 text-[17px] font-medium text-[#2c4538] hover:text-[#119b48]"
+        className="flex items-center gap-2 self-start text-[15px] font-medium text-[#2c4538] hover:text-[#119b48] sm:self-auto sm:text-[17px]"
       >
         View All <ArrowRight className="h-4 w-4" />
       </Link>

@@ -15,6 +15,7 @@ type FieldName =
   | 'requiredSkills'
   | 'deadline'
   | 'status';
+type FieldErrors = Partial<Record<FieldName, string>>;
 
 interface FormValues {
   title: string;
@@ -44,57 +45,115 @@ const controlClass =
   'w-full rounded-[14px] border border-[#cfdcd2] bg-white px-4 text-[16px] text-slate-900 outline-none placeholder:text-[#5f7367] focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/15 aria-[invalid=true]:border-red-400';
 const labelClass = 'mb-2 block text-[15px] font-medium text-slate-900';
 
-// Mirrors the backend rules in JobRequest; returns the first failing field
-const validate = (v: FormValues): { field: FieldName; message: string } | null => {
-  if (!v.title.trim()) return { field: 'title', message: 'Job title is required.' };
-  if (!v.companyName.trim()) return { field: 'companyName', message: 'Company name is required.' };
-  if (!v.description.trim()) return { field: 'description', message: 'Description is required.' };
-  if (!v.location.trim()) return { field: 'location', message: 'Location is required.' };
-  if (!v.requiredSkills.trim())
-    return { field: 'requiredSkills', message: 'Required skills are required.' };
-  if (!v.deadline) return { field: 'deadline', message: 'Application deadline is required.' };
-  if (new Date(v.deadline).getTime() <= Date.now())
-    return { field: 'deadline', message: 'Application deadline must be in the future.' };
-  return null;
+const validate = (v: FormValues): FieldErrors => {
+  const errors: FieldErrors = {};
+  if (!v.title.trim()) errors.title = 'Job title is required.';
+  if (!v.companyName.trim()) errors.companyName = 'Company name is required.';
+  if (!v.description.trim()) errors.description = 'Description is required.';
+  if (!v.location.trim()) errors.location = 'Location is required.';
+  if (!v.employmentType) errors.employmentType = 'Select an employment type.';
+  if (!v.requiredSkills.trim()) errors.requiredSkills = 'Required skills are required.';
+  if (!v.status.trim()) errors.status = 'Select a job status.';
+
+  if (!v.deadline) {
+    errors.deadline = 'Application deadline is required.';
+  } else {
+    const deadline = new Date(v.deadline).getTime();
+    if (Number.isNaN(deadline)) {
+      errors.deadline = 'Enter a valid application deadline.';
+    } else if (deadline <= Date.now()) {
+      errors.deadline = 'Application deadline must be in the future.';
+    }
+  }
+
+  return errors;
+};
+
+const backendValidationFields: Record<string, FieldName> = {
+  'Title is required': 'title',
+  'Company name is required': 'companyName',
+  'Description is required': 'description',
+  'Location is required': 'location',
+  'Employment type is required': 'employmentType',
+  'Required skills are required': 'requiredSkills',
+  'Application deadline is required': 'deadline',
+  'Application deadline must be in the future': 'deadline',
+  'Status is required': 'status',
+};
+
+const mapBackendValidationErrors = (message?: string): FieldErrors => {
+  const errors: FieldErrors = {};
+  message?.split(';').forEach((item) => {
+    const field = backendValidationFields[item.trim()];
+    if (field) errors[field] = `${item.trim()}.`;
+  });
+  return errors;
 };
 
 interface JobFormProps {
   titleId: string;
+  job: Job | null;
   onCancel: () => void;
-  onCreated: (job: Job) => void;
+  onSaved: (job: Job) => void;
 }
 
-const JobForm: React.FC<JobFormProps> = ({ titleId, onCancel, onCreated }) => {
-  const [values, setValues] = useState<FormValues>(emptyForm);
+const toDateTimeLocal = (dateTime: string) => {
+  if (!/[zZ]|[+-]\d{2}:\d{2}$/.test(dateTime)) return dateTime.slice(0, 16);
+  const date = new Date(dateTime);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+};
+
+const JobForm: React.FC<JobFormProps> = ({ titleId, job, onCancel, onSaved }) => {
+  const [values, setValues] = useState<FormValues>(() =>
+    job
+      ? {
+          title: job.title,
+          companyName: job.companyName,
+          description: job.description,
+          location: job.location,
+          employmentType: job.employmentType,
+          requiredSkills: job.requiredSkills,
+          deadline: toDateTimeLocal(job.deadline),
+          status: job.status as JobStatusValue,
+        }
+      : emptyForm,
+  );
   const [error, setError] = useState('');
-  const [invalidField, setInvalidField] = useState<FieldName | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
 
-  const set = <K extends keyof FormValues>(key: K, value: FormValues[K]) =>
+  const set = <K extends keyof FormValues>(key: K, value: FormValues[K]) => {
     setValues((prev) => ({ ...prev, [key]: value }));
+    setFieldErrors((previous) => {
+      if (!previous[key]) return previous;
+      const next = { ...previous };
+      delete next[key];
+      return next;
+    });
+    setError('');
+  };
 
   const fieldProps = (id: FieldName) => ({
     id,
-    'aria-invalid': invalidField === id,
-    'aria-describedby': invalidField === id ? ERROR_ID : undefined,
+    'aria-invalid': Boolean(fieldErrors[id]),
+    'aria-describedby': fieldErrors[id] ? `${id}-error` : undefined,
   });
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
-    setInvalidField(null);
-
-    const problem = validate(values);
-    if (problem) {
-      setError(problem.message);
-      setInvalidField(problem.field);
-      document.getElementById(problem.field)?.focus();
+    const validationErrors = validate(values);
+    setFieldErrors(validationErrors);
+    const firstInvalidField = (Object.keys(validationErrors) as FieldName[])[0];
+    if (firstInvalidField) {
+      document.getElementById(firstInvalidField)?.focus();
       return;
     }
 
     setSubmitting(true);
     try {
-      const response = await api.post<Job>('/jobs', {
+      const request = {
         title: values.title.trim(),
         companyName: values.companyName.trim(),
         description: values.description.trim(),
@@ -103,11 +162,23 @@ const JobForm: React.FC<JobFormProps> = ({ titleId, onCancel, onCreated }) => {
         requiredSkills: values.requiredSkills.trim(),
         deadline: values.deadline,
         status: values.status,
-      });
-      onCreated(response.data);
+      };
+      const response = job
+        ? await api.put<Job>(`/jobs/${job.id}`, request)
+        : await api.post<Job>('/jobs', request);
+      onSaved(response.data);
     } catch (err: unknown) {
-      const message = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
-      setError(message || 'Could not create the job. Please try again.');
+      const message = axios.isAxiosError<{ message?: string }>(err)
+        ? err.response?.data?.message
+        : undefined;
+      const serverErrors = mapBackendValidationErrors(message);
+      if (Object.keys(serverErrors).length > 0) {
+        setFieldErrors(serverErrors);
+        const firstInvalidField = (Object.keys(serverErrors) as FieldName[])[0];
+        document.getElementById(firstInvalidField)?.focus();
+      } else {
+        setError(message || `Could not ${job ? 'update' : 'create'} the job. Please try again.`);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -126,9 +197,16 @@ const JobForm: React.FC<JobFormProps> = ({ titleId, onCancel, onCreated }) => {
       )}
 
       <div className="space-y-5">
-        <p className="rounded-xl bg-[#f1f7f2] px-4 py-3 text-sm text-[#53665b]">
-          A unique job code will be generated automatically after creation and cannot be changed.
-        </p>
+        {job ? (
+          <div className="rounded-xl bg-[#f1f7f2] px-4 py-3 text-sm text-[#53665b]">
+            Job code <span className="font-semibold text-[#1b3428]">{job.jobCode}</span> is
+            permanent and cannot be changed.
+          </div>
+        ) : (
+          <p className="rounded-xl bg-[#f1f7f2] px-4 py-3 text-sm text-[#53665b]">
+            A unique job code will be generated automatically after creation and cannot be changed.
+          </p>
+        )}
 
         <div>
           <label htmlFor="title" className={labelClass}>
@@ -143,6 +221,11 @@ const JobForm: React.FC<JobFormProps> = ({ titleId, onCancel, onCreated }) => {
             placeholder="e.g. Frontend Developer"
             className={`${controlClass} h-[48px]`}
           />
+          {fieldErrors.title && (
+            <p id="title-error" className="mt-1 text-sm text-red-600">
+              {fieldErrors.title}
+            </p>
+          )}
         </div>
 
         <div>
@@ -159,6 +242,11 @@ const JobForm: React.FC<JobFormProps> = ({ titleId, onCancel, onCreated }) => {
             placeholder="e.g. iSignTech"
             className={`${controlClass} h-[48px]`}
           />
+          {fieldErrors.companyName && (
+            <p id="companyName-error" className="mt-1 text-sm text-red-600">
+              {fieldErrors.companyName}
+            </p>
+          )}
         </div>
 
         <div>
@@ -174,6 +262,11 @@ const JobForm: React.FC<JobFormProps> = ({ titleId, onCancel, onCreated }) => {
             placeholder="Describe the role and responsibilities"
             className={`${controlClass} resize-y py-3`}
           />
+          {fieldErrors.description && (
+            <p id="description-error" className="mt-1 text-sm text-red-600">
+              {fieldErrors.description}
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -190,6 +283,11 @@ const JobForm: React.FC<JobFormProps> = ({ titleId, onCancel, onCreated }) => {
               placeholder="e.g. Hyderabad"
               className={`${controlClass} h-[48px]`}
             />
+            {fieldErrors.location && (
+              <p id="location-error" className="mt-1 text-sm text-red-600">
+                {fieldErrors.location}
+              </p>
+            )}
           </div>
 
           <div>
@@ -209,6 +307,11 @@ const JobForm: React.FC<JobFormProps> = ({ titleId, onCancel, onCreated }) => {
                 </option>
               ))}
             </select>
+            {fieldErrors.employmentType && (
+              <p id="employmentType-error" className="mt-1 text-sm text-red-600">
+                {fieldErrors.employmentType}
+              </p>
+            )}
           </div>
         </div>
 
@@ -225,6 +328,11 @@ const JobForm: React.FC<JobFormProps> = ({ titleId, onCancel, onCreated }) => {
             placeholder="e.g. React, TypeScript, REST APIs"
             className={`${controlClass} h-[48px]`}
           />
+          {fieldErrors.requiredSkills && (
+            <p id="requiredSkills-error" className="mt-1 text-sm text-red-600">
+              {fieldErrors.requiredSkills}
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -240,6 +348,11 @@ const JobForm: React.FC<JobFormProps> = ({ titleId, onCancel, onCreated }) => {
               onChange={(e) => set('deadline', e.target.value)}
               className={`${controlClass} h-[48px]`}
             />
+            {fieldErrors.deadline && (
+              <p id="deadline-error" className="mt-1 text-sm text-red-600">
+                {fieldErrors.deadline}
+              </p>
+            )}
           </div>
 
           <div>
@@ -259,6 +372,11 @@ const JobForm: React.FC<JobFormProps> = ({ titleId, onCancel, onCreated }) => {
                 </option>
               ))}
             </select>
+            {fieldErrors.status && (
+              <p id="status-error" className="mt-1 text-sm text-red-600">
+                {fieldErrors.status}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -276,7 +394,7 @@ const JobForm: React.FC<JobFormProps> = ({ titleId, onCancel, onCreated }) => {
           disabled={submitting}
           className="flex h-[48px] min-w-[140px] items-center justify-center rounded-[14px] bg-gradient-to-r from-[#12a64b] to-[#10813f] px-6 text-[16px] font-semibold text-white shadow-[0_3px_5px_rgba(15,23,42,0.22)] transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {submitting ? 'Creating…' : 'Create Job'}
+          {submitting ? (job ? 'Saving…' : 'Creating…') : job ? 'Save Changes' : 'Create Job'}
         </button>
       </div>
     </form>
@@ -285,14 +403,20 @@ const JobForm: React.FC<JobFormProps> = ({ titleId, onCancel, onCreated }) => {
 
 interface CreateJobDialogProps {
   open: boolean;
+  job?: Job | null;
   onClose: () => void;
-  onCreated: (job: Job) => void;
+  onSaved: (job: Job) => void;
 }
 
 /** Modal form for posting a new job. Uses the native <dialog> for focus trapping and Esc. */
-export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({ open, onClose, onCreated }) => {
+export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
+  open,
+  job = null,
+  onClose,
+  onSaved,
+}) => {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const titleId = 'create-job-title';
+  const titleId = `job-dialog-title-${job?.id ?? 'new'}`;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -314,7 +438,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({ open, onClose,
     >
       <div className="flex items-center justify-between px-8 pb-4 pt-7">
         <h2 id={titleId} className="font-display text-[26px] font-bold tracking-[-0.5px] text-[#1b3428]">
-          Create Job
+          {job ? 'Edit Job' : 'Create Job'}
         </h2>
         <button
           type="button"
@@ -327,7 +451,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({ open, onClose,
       </div>
 
       {/* Mounted only while open so the form resets every time it is reopened */}
-      {open && <JobForm titleId={titleId} onCancel={onClose} onCreated={onCreated} />}
+      {open && <JobForm key={job?.id ?? 'new'} titleId={titleId} job={job} onCancel={onClose} onSaved={onSaved} />}
     </dialog>
   );
 };
