@@ -24,8 +24,8 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, icon: Icon, tileClass
       <Icon className={`h-6 w-6 ${iconClass}`} />
     </span>
     <div>
-      <dt className="text-[17px] leading-snug text-[#5d7266]">{label}</dt>
-      <dd className="font-display mt-1 text-[36px] font-bold leading-none text-[#1b3428]">
+      <dt className="text-[16px] leading-snug text-[#5d7266]">{label}</dt>
+      <dd className="font-display mt-1 text-[32px] font-bold leading-none text-[#1b3428]">
         {value ?? '–'}
       </dd>
     </div>
@@ -35,25 +35,28 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, icon: Icon, tileClass
 interface SectionCardProps {
   title: string;
   icon: LucideIcon;
-  viewAllTo: string;
+  /** Omit when the target page does not exist, so no dead link is shown. */
+  viewAllTo?: string;
   emptyText: string;
 }
 
 const SectionCard: React.FC<SectionCardProps> = ({ title, icon: Icon, viewAllTo, emptyText }) => (
   <section className="rounded-[28px] bg-white px-5 py-6 shadow-[0_2px_8px_rgba(15,23,42,0.08)] sm:px-10 sm:py-9">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <h2 className="font-display flex items-center gap-3 text-xl font-semibold tracking-[-0.5px] text-[#1b3428] sm:text-[28px]">
+      <h2 className="font-display flex items-center gap-3 text-lg font-semibold tracking-[-0.5px] text-[#1b3428] sm:text-[24px]">
         <Icon className="h-6 w-6 text-[#119b48]" />
         {title}
       </h2>
-      <Link
-        to={viewAllTo}
-        className="flex items-center gap-2 self-start text-[15px] font-medium text-[#2c4538] hover:text-[#119b48] sm:self-auto sm:text-[17px]"
-      >
-        View All <ArrowRight className="h-4 w-4" />
-      </Link>
+      {viewAllTo && (
+        <Link
+          to={viewAllTo}
+          className="flex items-center gap-2 self-start text-[14px] font-medium text-[#2c4538] hover:text-[#119b48] sm:self-auto sm:text-[16px]"
+        >
+          View All <ArrowRight className="h-4 w-4" />
+        </Link>
+      )}
     </div>
-    <p className="py-16 text-center text-[18px] text-[#53665b]">{emptyText}</p>
+    <p className="py-16 text-center text-[16px] text-[#53665b]">{emptyText}</p>
   </section>
 );
 
@@ -118,13 +121,11 @@ export const Dashboard: React.FC = () => {
         <SectionCard
           title="Upcoming Assessments"
           icon={ClipboardCheck}
-          viewAllTo="/assessments"
           emptyText="No upcoming assessments."
         />
         <SectionCard
           title="Upcoming Interviews"
           icon={Video}
-          viewAllTo="/interviews"
           emptyText="No upcoming interviews."
         />
       </div>

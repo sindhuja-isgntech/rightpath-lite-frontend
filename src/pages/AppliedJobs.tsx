@@ -197,11 +197,11 @@ export const AppliedJobs: React.FC = () => {
           No applications match your search.
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 2xl:grid-cols-3">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))] gap-6">
           {filteredApplications.map((application) => (
             <article
               key={application.id}
-              className="flex min-h-[356px] max-w-[352px] flex-col rounded-[24px] border border-[#e2e9e3] bg-white p-7 shadow-[0_2px_4px_rgba(15,23,42,0.10)]"
+              className="flex min-h-[356px] min-w-0 flex-col rounded-[24px] border border-[#e2e9e3] bg-white p-7 shadow-[0_2px_4px_rgba(15,23,42,0.10)]"
             >
               <div className="mb-1 flex items-start justify-between gap-3">
                 <h2 className="min-w-0 truncate text-[20px] font-semibold text-[#1b3428]" title={application.jobTitle}>
@@ -226,7 +226,8 @@ export const AppliedJobs: React.FC = () => {
               <div className="mt-5 space-y-3 text-[16px] text-[#53665b]">
                 <p className="flex items-start gap-3">
                   <BriefcaseBusiness aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span className="break-words">Ref: {application.jobCode}</span>
+                  {/* min-w-0 lets the flex child shrink, so very long codes wrap inside the card */}
+                  <span className="min-w-0 break-all">Ref: {application.jobCode}</span>
                 </p>
                 <p className="flex items-start gap-3">
                   <CalendarDays aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />

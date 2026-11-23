@@ -45,6 +45,13 @@ const controlClass =
   'w-full rounded-[14px] border border-[#cfdcd2] bg-white px-4 text-[16px] text-slate-900 outline-none placeholder:text-[#5f7367] focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/15 aria-[invalid=true]:border-red-400';
 const labelClass = 'mb-2 block text-[15px] font-medium text-slate-900';
 
+/** Red asterisk for required fields; hidden from screen readers because the input has `required`. */
+const RequiredMark: React.FC = () => (
+  <span aria-hidden="true" className="ml-0.5 text-red-600">
+    *
+  </span>
+);
+
 const validate = (v: FormValues): FieldErrors => {
   const errors: FieldErrors = {};
   if (!v.title.trim()) errors.title = 'Job title is required.';
@@ -208,9 +215,15 @@ const JobForm: React.FC<JobFormProps> = ({ titleId, job, onCancel, onSaved }) =>
           </p>
         )}
 
+        <p className="text-sm text-[#53665b]">
+          Fields marked with <span aria-hidden="true" className="text-red-600">*</span>
+          <span className="sr-only">an asterisk</span> are required.
+        </p>
+
         <div>
           <label htmlFor="title" className={labelClass}>
             Job title
+            <RequiredMark />
           </label>
           <input
             {...fieldProps('title')}
@@ -231,6 +244,7 @@ const JobForm: React.FC<JobFormProps> = ({ titleId, job, onCancel, onSaved }) =>
         <div>
           <label htmlFor="companyName" className={labelClass}>
             Company name
+            <RequiredMark />
           </label>
           <input
             {...fieldProps('companyName')}
@@ -252,6 +266,7 @@ const JobForm: React.FC<JobFormProps> = ({ titleId, job, onCancel, onSaved }) =>
         <div>
           <label htmlFor="description" className={labelClass}>
             Description
+            <RequiredMark />
           </label>
           <textarea
             {...fieldProps('description')}
@@ -273,6 +288,7 @@ const JobForm: React.FC<JobFormProps> = ({ titleId, job, onCancel, onSaved }) =>
           <div>
             <label htmlFor="location" className={labelClass}>
               Location
+              <RequiredMark />
             </label>
             <input
               {...fieldProps('location')}
@@ -293,6 +309,7 @@ const JobForm: React.FC<JobFormProps> = ({ titleId, job, onCancel, onSaved }) =>
           <div>
             <label htmlFor="employmentType" className={labelClass}>
               Employment type
+              <RequiredMark />
             </label>
             <select
               {...fieldProps('employmentType')}
@@ -318,6 +335,7 @@ const JobForm: React.FC<JobFormProps> = ({ titleId, job, onCancel, onSaved }) =>
         <div>
           <label htmlFor="requiredSkills" className={labelClass}>
             Required skills
+            <RequiredMark />
           </label>
           <input
             {...fieldProps('requiredSkills')}
@@ -339,6 +357,7 @@ const JobForm: React.FC<JobFormProps> = ({ titleId, job, onCancel, onSaved }) =>
           <div>
             <label htmlFor="deadline" className={labelClass}>
               Application deadline
+              <RequiredMark />
             </label>
             <input
               {...fieldProps('deadline')}
@@ -358,6 +377,7 @@ const JobForm: React.FC<JobFormProps> = ({ titleId, job, onCancel, onSaved }) =>
           <div>
             <label htmlFor="status" className={labelClass}>
               Status
+              <RequiredMark />
             </label>
             <select
               {...fieldProps('status')}
@@ -437,7 +457,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
       className="m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-[680px] overflow-y-auto rounded-[24px] bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-black/40"
     >
       <div className="flex items-center justify-between px-8 pb-4 pt-7">
-        <h2 id={titleId} className="font-display text-[26px] font-bold tracking-[-0.5px] text-[#1b3428]">
+        <h2 id={titleId} className="font-display text-[24px] font-bold tracking-[-0.5px] text-[#1b3428]">
           {job ? 'Edit Job' : 'Create Job'}
         </h2>
         <button

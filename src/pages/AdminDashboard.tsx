@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Activity, Briefcase, CalendarX, CircleCheck, ClipboardList, Clock, Video } from 'lucide-react';
+import { Activity, Briefcase, CalendarX, CircleCheck, Clock } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { api } from '../services/api';
@@ -47,8 +47,8 @@ interface StatCardProps {
 const StatCard: React.FC<StatCardProps> = ({ label, value, note, icon: Icon, tileClass, iconClass }) => (
   <div className="flex items-start justify-between rounded-[28px] bg-white p-7 shadow-[0_2px_8px_rgba(15,23,42,0.08)]">
     <div>
-      <dt className="text-[17px] text-[#5d7266]">{label}</dt>
-      <dd className="font-display mt-2 text-[32px] font-bold leading-none text-[#1b3428]">
+      <dt className="text-[16px] text-[#5d7266]">{label}</dt>
+      <dd className="font-display mt-2 text-[30px] font-bold leading-none text-[#1b3428]">
         {value ?? '--'}
       </dd>
       <dd className="mt-3 text-[15px] text-[#5d7266]">{note}</dd>
@@ -91,7 +91,7 @@ export const AdminDashboard: React.FC = () => {
     return (
       <>
         {header}
-        <p role="status" className="py-16 text-center text-[17px] text-[#53665b]">
+        <p role="status" className="py-16 text-center text-[16px] text-[#53665b]">
           Loading dashboard…
         </p>
       </>
@@ -165,38 +165,21 @@ export const AdminDashboard: React.FC = () => {
           tileClass="bg-[#fdeee3]"
           iconClass="text-[#d9730d]"
         />
-        {/* No backend for assessments or interviews yet */}
-        <StatCard
-          label="Pending Assessments"
-          value={null}
-          note="Not tracked yet"
-          icon={ClipboardList}
-          tileClass="bg-[#e3effd]"
-          iconClass="text-[#2563c9]"
-        />
-        <StatCard
-          label="Active Interviews"
-          value={null}
-          note="Not tracked yet"
-          icon={Video}
-          tileClass="bg-[#e0f4f1]"
-          iconClass="text-[#0f8f8a]"
-        />
       </dl>
 
       <section className="mt-10 rounded-[28px] bg-white px-5 py-6 shadow-[0_2px_8px_rgba(15,23,42,0.08)] sm:px-10 sm:py-9">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="font-display flex items-center gap-3 text-xl font-semibold tracking-[-0.5px] text-[#1b3428] sm:text-[26px]">
+          <h2 className="font-display flex items-center gap-3 text-lg font-semibold tracking-[-0.5px] text-[#1b3428] sm:text-[24px]">
             <Activity className="h-6 w-6 text-[#119b48]" aria-hidden="true" />
             Recent Job Posts
           </h2>
-          <p className="text-[17px] text-[#5d7266]">
+          <p className="text-[16px] text-[#5d7266]">
             Showing {recentJobs.length} of {jobs.length}
           </p>
         </div>
 
         {recentJobs.length === 0 ? (
-          <p className="py-14 text-center text-[17px] text-[#53665b]">No jobs have been posted yet.</p>
+          <p className="py-14 text-center text-[16px] text-[#53665b]">No jobs have been posted yet.</p>
         ) : (
           <ul className="mt-6 space-y-4">
             {recentJobs.map((job) => {
@@ -209,7 +192,7 @@ export const AdminDashboard: React.FC = () => {
                   className="flex items-center justify-between gap-4 rounded-2xl border border-[#e3e8e4] bg-[#f6f7f5] px-6 py-5"
                 >
                   <div className="min-w-0">
-                    <h3 className="truncate text-[18px] font-semibold text-[#1b3428]">{job.title}</h3>
+                    <h3 className="truncate text-[16px] font-semibold text-[#1b3428]">{job.title}</h3>
                     <p className="mt-1 truncate text-[15px] text-[#5d7266]">
                       {job.companyName} · {job.location} · {job.jobCode}
                     </p>

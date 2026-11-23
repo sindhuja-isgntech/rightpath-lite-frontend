@@ -310,7 +310,7 @@ export const AdminApplications: FC = () => {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-sm font-medium text-[#119b48]">Application #{selectedApplication.id}</p>
-                <h2 id="admin-application-details-title" className="mt-2 text-2xl font-semibold text-[#1b3428]">
+                <h2 id="admin-application-details-title" className="mt-2 text-[22px] font-semibold text-[#1b3428]">
                   Candidate and job details
                 </h2>
               </div>

@@ -18,3 +18,62 @@ body {
 #root {
   min-height: 100vh;
 }
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+html[data-theme='dark'] body,
+html[data-theme='dark'] #root,
+html[data-theme='dark'] #root > div {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+html[data-theme='dark'] aside,
+html[data-theme='dark'] header.sticky {
+  background-color: #172a27;
+}
+
+html[data-theme='dark'] .bg-white,
+html[data-theme='dark'] [class*='bg-[#f8f8f6]'],
+html[data-theme='dark'] [class*='bg-[#f6f7f5]'],
+html[data-theme='dark'] [class*='bg-[#f1f6f2]'],
+html[data-theme='dark'] [class*='bg-[#f1f7f2]'],
+html[data-theme='dark'] [class*='bg-[#f0f3f0]'],
+html[data-theme='dark'] [class*='bg-[#eef4ef]'] {
+  background-color: #1e293b;
+}
+
+html[data-theme='dark'] [class*='text-[#1b3428]'],
+html[data-theme='dark'] [class*='text-[#263d31]'],
+html[data-theme='dark'] [class*='text-[#2c4538]'],
+html[data-theme='dark'] .text-slate-900 {
+  color: #e2e8f0;
+}
+
+html[data-theme='dark'] [class*='text-[#53665b]'],
+html[data-theme='dark'] [class*='text-[#5d7266]'],
+html[data-theme='dark'] [class*='text-[#71877b]'] {
+  color: #cbd5e1;
+}
+
+html[data-theme='dark'] [class*='border-[#e1e9e2]'],
+html[data-theme='dark'] [class*='border-[#e3e8e4]'],
+html[data-theme='dark'] [class*='border-[#edf1ed]'],
+html[data-theme='dark'] [class*='border-[#e2e9e3]'] {
+  border-color: #334155;
+}
+
+html[data-theme='dark'] input,
+html[data-theme='dark'] select,
+html[data-theme='dark'] textarea {
+  border-color: #475569;
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+html[data-theme='dark'] input::placeholder,
+html[data-theme='dark'] textarea::placeholder {
+  color: #94a3b8;
+}
